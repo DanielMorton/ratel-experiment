@@ -59,30 +59,30 @@ pub fn pool_bernoulli(runs: u32, iterations: u32, agent_start: &[f64], arg: &Arg
 fn pair_bernoulli(
     runs: u32,
     iterations: u32,
-    left: &f64,
-    right: &f64,
+    &left: &f64,
+    &right: &f64,
     start: &f64,
     arg: &ArgMatches,
 ) {
     let rand_start = Uniform::new(start - 1e-7, start + 1e-7);
     let q_init = random_init(&rand_start, 2);
-    let mut stepper = HarmonicStepper::new(1, 2);
+    let stepper = Box::new(HarmonicStepper::new(1, 2));
     let ones = vec![1; 2];
-    let pair = vec![*left, *right];
-    let bandit = BinomialBandit::new(&ones, &pair);
-    let mut agent: Box<dyn Agent<u32>> = if arg.is_present("pair_greedy") {
-        Box::new(GreedyAgent::new(q_init, &mut stepper))
+    let pair = vec![left, right];
+    let bandit = Box::new(BinomialBandit::new(ones, vec![left, right]));
+    let agent: Box<dyn Agent<u32>> = if arg.is_present("pair_greedy") {
+        Box::new(GreedyAgent::new(q_init, stepper))
     } else if arg.is_present("pair_epsilon") {
         let epsilon = value_t!(arg.value_of("pair_epsilon"), f64).unwrap_or_else(|e| e.exit());
-        Box::new(EpsilonGreedyAgent::new(q_init, &mut stepper, epsilon))
+        Box::new(EpsilonGreedyAgent::new(q_init, stepper, epsilon))
     } else if arg.is_present("pair_optimistic") {
         let c = value_t!(arg.value_of("pair_optimistic"), f64).unwrap_or_else(|e| e.exit());
-        Box::new(OptimisticAgent::new(q_init, c, &mut stepper))
+        Box::new(OptimisticAgent::new(q_init, c, stepper))
     } else {
-        Box::new(GreedyAgent::new(q_init, &mut stepper))
+        Box::new(GreedyAgent::new(q_init, stepper))
     };
 
-    let mut game = Game::new(&mut *agent, &bandit);
+    let mut game = Game::new(agent, bandit);
 
     let file_name = make_file_name(arg);
     let mut file = OpenOptions::new().append(true).open(file_name).unwrap();

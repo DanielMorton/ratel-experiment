@@ -29,7 +29,7 @@ pub fn multiple_runs(
             .map(|(r, &gr)| r + gr)
             .collect();
         let q_new = random_init(rand_start, game.arms());
-        game.reset(q_new)
+        game.reset(&q_new)
     }
     let output = wins
         .iter()
